@@ -52,6 +52,7 @@ jobs:
 
     - name: Fix SDK folder structure for Buildozer
       run: |
+        mkdir -p $HOME/.buildozer/android/platform
         rm -rf $HOME/.buildozer/android/platform/android-sdk
         ln -s $HOME/android-sdk $HOME/.buildozer/android/platform/android-sdk
 
