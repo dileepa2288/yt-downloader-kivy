@@ -1,4 +1,5 @@
 name: Build Kivy APK
+
 on:
   push:
     branches:
@@ -21,7 +22,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install -y zip unzip openjdk-17-jdk wget git python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo6 cmake libffi-dev libssl-dev ffmpeg
+        sudo apt install -y zip unzip openjdk-11-jdk wget git python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo6 cmake libffi-dev libssl-dev ffmpeg
         pip install --upgrade pip
         pip install buildozer cython virtualenv
 
@@ -42,27 +43,27 @@ jobs:
       run: |
         echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
         echo "ANDROID_NDK_ROOT=$HOME/android-ndk-r25b" >> $GITHUB_ENV
-        echo "PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$HOME/android-sdk/platform-tools:$HOME/.local/bin:$HOME/android-ndk-r25b:$PATH" >> $GITHUB_ENV
+        echo "PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$HOME/android-sdk/platform-tools:$HOME/.local/bin:$HOME/android-ndk-r25b:${PATH}" >> $GITHUB_ENV
 
     - name: Accept licenses and install SDK packages
       run: |
         yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android-sdk --licenses
         $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android-sdk "platform-tools" "platforms;android-31" "build-tools;36.0.0" "ndk;25.2.9519653"
 
-    - name: Configure Buildozer SDK path
+    - name: Fix SDK folder structure for Buildozer
       run: |
-        mkdir -p $HOME/.buildozer/android/platform/android-sdk
-        ln -sf $HOME/android-sdk/* $HOME/.buildozer/android/platform/android-sdk/
-        echo "android.sdk_path = $HOME/android-sdk" >> buildozer.spec
+        rm -rf $HOME/.buildozer/android/platform/android-sdk
+        ln -s $HOME/android-sdk $HOME/.buildozer/android/platform/android-sdk
 
     - name: Build APK
-      run: |
-        buildozer -v android debug
+      run: buildozer -v android debug
       env:
         ANDROIDSDK: $HOME/android-sdk
         ANDROIDNDK: $HOME/android-ndk-r25b
+        ANDROID_SDK_ROOT: $HOME/android-sdk
+        ANDROID_NDK_ROOT: $HOME/android-ndk-r25b
 
-    - name: Upload APK
+    - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
         name: YouTubeDownloader-APK
