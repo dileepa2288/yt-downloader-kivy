@@ -2,32 +2,33 @@ name: Build Kivy APK
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: "3.10"
 
-    - name: Install buildozer & dependencies
+    - name: Install dependencies
       run: |
-        sudo apt update
-        sudo apt install -y zip unzip git openjdk-17-jdk python3-pip
-        pip install --upgrade pip
+        python -m pip install --upgrade pip
         pip install buildozer cython
-    
+
+    - name: Set up Android SDK
+      uses: android-actions/setup-android@v3
+
     - name: Install AIDL (Android SDK Build-Tools)
       run: |
         yes | sdkmanager "build-tools;34.0.0"
-    
+
     - name: Build APK
       run: |
         buildozer android debug
@@ -35,5 +36,5 @@ jobs:
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: kivy-apk
+        name: YouTubeDownloader.apk
         path: bin/*.apk
