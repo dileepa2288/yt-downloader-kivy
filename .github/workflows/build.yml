@@ -41,19 +41,19 @@ jobs:
     - name: Set environment variables
       run: |
         echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+        echo "ANDROID_NDK_ROOT=$HOME/android-ndk-r25b" >> $GITHUB_ENV
         echo "PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$HOME/android-sdk/platform-tools:$HOME/.local/bin:$HOME/android-ndk-r25b:$PATH" >> $GITHUB_ENV
 
     - name: Accept licenses and install SDK packages
       run: |
-        yes | sdkmanager --licenses
-        sdkmanager "platform-tools" "platforms;android-31" "build-tools;36.0.0" "ndk;25.2.9519653"
+        yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android-sdk --licenses
+        $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android-sdk "platform-tools" "platforms;android-31" "build-tools;36.0.0" "ndk;25.2.9519653"
 
-    - name: Verify and fix build-tools
+    - name: Configure Buildozer SDK path
       run: |
-        mkdir -p $HOME/.buildozer/android/platform/android-sdk/build-tools/36.0.0
-        cp -r $HOME/android-sdk/build-tools/36.0.0/* $HOME/.buildozer/android/platform/android-sdk/build-tools/36.0.0/
-        echo "Ensuring aidl is available in PATH"
-        export PATH=$PATH:$HOME/.buildozer/android/platform/android-sdk/build-tools/36.0.0
+        mkdir -p $HOME/.buildozer/android/platform/android-sdk
+        ln -sf $HOME/android-sdk/* $HOME/.buildozer/android/platform/android-sdk/
+        echo "android.sdk_path = $HOME/android-sdk" >> buildozer.spec
 
     - name: Build APK
       run: |
