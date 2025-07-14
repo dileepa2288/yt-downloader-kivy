@@ -48,6 +48,13 @@ jobs:
         yes | sdkmanager --licenses
         sdkmanager "platform-tools" "platforms;android-31" "build-tools;36.0.0" "ndk;25.2.9519653"
 
+    - name: Verify and fix build-tools
+      run: |
+        mkdir -p $HOME/.buildozer/android/platform/android-sdk/build-tools/36.0.0
+        cp -r $HOME/android-sdk/build-tools/36.0.0/* $HOME/.buildozer/android/platform/android-sdk/build-tools/36.0.0/
+        echo "Ensuring aidl is available in PATH"
+        export PATH=$PATH:$HOME/.buildozer/android/platform/android-sdk/build-tools/36.0.0
+
     - name: Build APK
       run: |
         buildozer -v android debug
