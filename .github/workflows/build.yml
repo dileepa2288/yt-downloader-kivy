@@ -43,12 +43,10 @@ jobs:
       run: |
         echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
         echo "ANDROID_NDK_ROOT=$HOME/android-ndk-r25b" >> $GITHUB_ENV
-        # Ensure PATH includes the cmdline-tools bin for sdkmanager and platform-tools for adb/fastboot
         echo "PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$HOME/android-sdk/platform-tools:$HOME/.local/bin:$HOME/android-ndk-r25b:${PATH}" >> $GITHUB_ENV
 
     - name: Accept licenses and install SDK packages
       run: |
-        # Use the explicit SDKMANAGER path for clarity and robustness
         yes | "$HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$HOME/android-sdk" --licenses
         "$HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$HOME/android-sdk" "platform-tools" "platforms;android-31" "build-tools;36.0.0" "ndk;25.2.9519653"
 
@@ -57,6 +55,7 @@ jobs:
         mkdir -p $HOME/.buildozer/android/platform
         rm -rf $HOME/.buildozer/android/platform/android-sdk
         ln -s $HOME/android-sdk $HOME/.buildozer/android/platform/android-sdk
+        ln -s $HOME/android-sdk/cmdline-tools/latest $HOME/android-sdk/tools
 
     - name: Build APK
       run: buildozer -v android debug
@@ -65,9 +64,9 @@ jobs:
         ANDROIDNDK: $HOME/android-ndk-r25b
         ANDROID_SDK_ROOT: $HOME/android-sdk
         ANDROID_NDK_ROOT: $HOME/android-ndk-r25b
-        SDKMANAGER: "$HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager" # Explicit path for sdkmanager
-        NDK_HOME: "$HOME/android-ndk-r25b" # Redundancy
-        ANDROID_HOME: "$HOME/android-sdk" # Redundancy
+        ANDROID_HOME: $HOME/android-sdk
+        NDK_HOME: $HOME/android-ndk-r25b
+        SDKMANAGER: $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager
 
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
