@@ -58,17 +58,6 @@ jobs:
         sed -i 's/# (str) Application title.*/title = YouTube Downloader/' buildozer.spec
         sed -i 's/source.include_exts = .*/source.include_exts = py,kv,png,jpg,jpeg,txt,md/' buildozer.spec
 
-    - name: Prepare p4a environment
-      run: |
-        export P4A_BOOTSTRAP=sdl2
-        export P4A_NDK_API=21
-        # Ensure libtool is properly configured
-        libtoolize --force || glibtoolize --force
-        aclocal
-        autoheader
-        automake --add-missing
-        autoconf
-
     - name: Build APK
       run: |
         buildozer -v android debug
