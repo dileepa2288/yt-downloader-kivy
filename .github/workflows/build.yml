@@ -21,7 +21,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt update -y
-        sudo apt install -y python3-pip build-essential git zip unzip openjdk-17-jdk libtool autoconf automake
+        sudo apt install -y python3-pip build-essential git zip unzip openjdk-17-jdk libtool autoconf automake pkg-config
         pip install --upgrade pip setuptools wheel
         pip install buildozer cython virtualenv yt-dlp ffmpeg-python kivymd
 
@@ -58,10 +58,16 @@ jobs:
         sed -i 's/# (str) Application title.*/title = YouTube Downloader/' buildozer.spec
         sed -i 's/source.include_exts = .*/source.include_exts = py,kv,png,jpg,jpeg,txt,md/' buildozer.spec
 
-    - name: Patch Autoconf for libffi
+    - name: Prepare p4a environment
       run: |
-        echo "m4_pattern_allow([LT_SYS_SYMBOL_USCORE])" >> configure.ac
-        autoreconf -f -i
+        export P4A_BOOTSTRAP=sdl2
+        export P4A_NDK_API=21
+        # Ensure libtool is properly configured
+        libtoolize --force || glibtoolize --force
+        aclocal
+        autoheader
+        automake --add-missing
+        autoconf
 
     - name: Build APK
       run: |
