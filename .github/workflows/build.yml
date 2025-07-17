@@ -1,118 +1,73 @@
-name: Android Build
-
+name: Build Kivy APK
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+    - name: Checkout source
+      uses: actions/checkout@v4
 
-      - name: Get Date
-        id: get-date
-        run: echo "date=$(date -u '+%Y%m%d')" >> $GITHUB_ENV
-        shell: bash
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
 
-      - name: Cache Buildozer global directory
-        uses: actions/cache@v4
-        with:
-          path: ~/.buildozer
-          key: ${{ runner.os }}-buildozer-global
-          restore-keys: |
-            ${{ runner.os }}-buildozer-global
+    - name: Install dependencies
+      run: |
+        sudo apt update -y
+        sudo apt install -y python3-pip build-essential git zip unzip openjdk-17-jdk libtool autoconf automake
+        pip install --upgrade pip setuptools wheel
+        pip install buildozer cython virtualenv yt-dlp ffmpeg-python
 
-      - name: Cache Buildozer directory in app
-        uses: actions/cache@v4
-        with:
-          path: .buildozer
-          key: ${{ runner.os }}-buildozer-app
-          restore-keys: |
-            ${{ runner.os }}-buildozer-app
+    - name: Set environment variables
+      run: |
+        echo "ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk" >> $GITHUB_ENV
+        echo "PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/36.0.0:$PATH" >> $GITHUB_ENV
 
-      - name: Cache Android SDK
-        uses: actions/cache@v4
-        with:
-          path: ~/.buildozer/android/platform/android-sdk
-          key: ${{ runner.os }}-android-sdk
-          restore-keys: |
-            ${{ runner.os }}-android-sdk
+    - name: Download and setup Android Command Line Tools
+      run: |
+        mkdir -p $HOME/.buildozer/android/platform/android-sdk/cmdline-tools
+        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip
+        unzip tools.zip -d $HOME/.buildozer/android/platform/android-sdk/cmdline-tools
+        mv $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/cmdline-tools $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest
+        mkdir -p $HOME/.buildozer/android/platform/android-sdk/tools/bin
+        ln -s $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager $HOME/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
+        chmod +x $HOME/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
 
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt-get install -y \
-            build-essential \
-            git \
-            ffmpeg \
-            libsdl2-dev \
-            libsdl2-image-dev \
-            libsdl2-mixer-dev \
-            libsdl2-ttf-dev \
-            libportmidi-dev \
-            libswscale-dev \
-            libavformat-dev \
-            libavcodec-dev \
-            libunwind-dev \
-            zlib1g-dev \
-            libsqlite3-dev \
-            sqlite3 \
-            bzip2 \
-            libbz2-dev \
-            openssl \
-            libgdbm-dev \
-            libgdbm-compat-dev \
-            liblzma-dev \
-            libreadline-dev \
-            uuid-dev \
-            libgstreamer1.0 \
-            gstreamer1.0-plugins-base \
-            gstreamer1.0-plugins-good \
-            zip \
-            unzip \
-            autoconf \
-            libtool \
-            pkg-config \
-            libncurses5-dev \
-            libncursesw5-dev \
-            libtinfo6 \
-            cmake \
-            libffi-dev \
-            libssl-dev \
-            automake
+    - name: Accept licenses and install SDK packages
+      run: |
+        yes | $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME --licenses
+        yes | $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "platform-tools" "platforms;android-33" "build-tools;36.0.0"
 
-      - name: Setup Java 17 required by Gradle
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+    - name: Download Android NDK
+      run: |
+        wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip -O ndk.zip
+        unzip ndk.zip -d $HOME/.buildozer/android/platform/
+        echo "ANDROID_NDK_HOME=$HOME/.buildozer/android/platform/android-ndk-r25b" >> $GITHUB_ENV
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+    - name: Initialize Buildozer
+      run: |
+        yes | buildozer init
+        sed -i 's/package.name = .*/package.name = youtubedownloader/' buildozer.spec
+        sed -i 's/package.domain = .*/package.domain = org.ryen/' buildozer.spec
+        sed -i 's/# (str) Application title.*/title = YouTube Downloader/' buildozer.spec
+        sed -i 's/source.include_exts = .*/source.include_exts = py,kv,png,jpg,jpeg,txt,md/' buildozer.spec
 
-      - name: Install pip dependencies
-        run: |
-          pip install --upgrade pip
-          pip install buildozer cython==0.29.33
+    - name: Build APK
+      run: |
+        buildozer -v android debug
+      env:
+        ANDROIDSDK: $HOME/.buildozer/android/platform/android-sdk
+        ANDROIDNDK: $HOME/.buildozer/android/platform/android-ndk-r25b
 
-      - name: Build with Buildozer
-        id: buildozer
-        run: |
-          yes | buildozer -v android debug
-
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: package
-          path: |
-            bin/*.apk
-            bin/*.aab
-          retention-days: 3
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: YouTubeDownloader-APK
+        path: bin/*.apk
