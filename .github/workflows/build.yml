@@ -58,6 +58,11 @@ jobs:
         sed -i 's/# (str) Application title.*/title = YouTube Downloader/' buildozer.spec
         sed -i 's/source.include_exts = .*/source.include_exts = py,kv,png,jpg,jpeg,txt,md/' buildozer.spec
 
+    - name: Patch Autoconf for libffi
+      run: |
+        echo "m4_pattern_allow([LT_SYS_SYMBOL_USCORE])" >> configure.ac
+        autoreconf -f -i
+
     - name: Build APK
       run: |
         buildozer -v android debug
