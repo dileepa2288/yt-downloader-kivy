@@ -23,7 +23,7 @@ jobs:
         sudo apt update -y
         sudo apt install -y python3-pip build-essential git zip unzip openjdk-17-jdk libtool autoconf automake
         pip install --upgrade pip setuptools wheel
-        pip install buildozer cython virtualenv yt-dlp ffmpeg-python
+        pip install buildozer cython virtualenv yt-dlp ffmpeg-python kivymd
 
     - name: Set environment variables
       run: |
@@ -51,9 +51,8 @@ jobs:
         unzip ndk.zip -d $HOME/.buildozer/android/platform/
         echo "ANDROID_NDK_HOME=$HOME/.buildozer/android/platform/android-ndk-r25b" >> $GITHUB_ENV
 
-    - name: Initialize Buildozer
+    - name: Configure Buildozer
       run: |
-        yes | buildozer init
         sed -i 's/package.name = .*/package.name = youtubedownloader/' buildozer.spec
         sed -i 's/package.domain = .*/package.domain = org.ryen/' buildozer.spec
         sed -i 's/# (str) Application title.*/title = YouTube Downloader/' buildozer.spec
